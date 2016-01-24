@@ -1,0 +1,42 @@
+#content {
+    min-width: 300px;
+    /* border: solid 1px black; */
+}
+
+h1 {
+    text-align: center;
+    margin-top: 1em;
+}
+
+#main-controls {    
+    margin-top: 3em;
+    margin-bottom: 2em;
+    text-align: center;
+    width: auto;
+}
+
+#time-input {
+    max-width: 90px;
+}
+
+#start-button {
+    margin-left: 1.5em
+}
+
+.progress {
+    height: 2.8em;
+}
+
+#options-box {
+    /*max-width: auto;*/
+    margin-top: 2em;
+}
+
+#options-box input[type="number"] {
+    width: 30px;
+}
+
+.center {
+    width: 50%; 
+    margin: 0 auto;
+}
