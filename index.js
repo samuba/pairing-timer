@@ -1,3 +1,5 @@
+var stop = false;
+
 function alertUser() {
     var playAudio = document.getElementById('audio-input').checked;
     var showNotific = document.getElementById('notification-input').checked;
@@ -16,18 +18,39 @@ function alertUser() {
     }
 }
 
-function start(progress, time, repeat) {   
-    setTimeout(function () {
-        progress = progress + 100;
-        var percent = (progress / time) * 100;
-        setProgressbar(percent);
-        if (percent >= 100) {
-            alertUser();
-            if (repeat) start(-2500, time, repeat)
-        } else {
-            start(progress, time, repeat);
-        }
-    }, 100);
+function buttonPressed(startButton) {
+    var time = document.getElementById('time-input').value * 1000 * 60;
+    var repeat = document.getElementById('repeat-input').checked
+    
+    if(startButton.textContent == "Start") {
+        stop = false;
+        start(0, time, repeat)
+        startButton.textContent = "Stop";
+        startButton.className = startButton.className.replace(' btn-success', '');
+        startButton.className += ' btn-danger';
+    } else {
+        stop = true;
+        setTimeout(function() { setProgressbar(0); }, 100)
+        startButton.textContent = "Start";
+        startButton.className = startButton.className.replace(' btn-danger', '');
+        startButton.className += ' btn-success';
+    } 
+}
+
+function start(progress, time, repeat) {       
+    if (!stop) {
+        setTimeout(function () {
+            progress = progress + 100;
+            var percent = (progress / time) * 100;
+            setProgressbar(percent);
+            if (percent >= 100) {
+                alertUser();
+                if (repeat) start(-2500, time, repeat)
+            } else {
+                start(progress, time, repeat);
+            }
+        }, 100);    
+    }  
 }
 
 function enableNotifications(enable) {
