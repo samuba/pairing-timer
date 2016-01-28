@@ -19,7 +19,7 @@ function alertUser() {
 }
 
 function buttonPressed(startButton) {
-    var time = document.getElementById('time-input').value * 1000 * 60;
+    var time = document.getElementById('time-input').value;
     var repeat = document.getElementById('repeat-input').checked
     
     if(startButton.textContent == "Start") {
@@ -30,7 +30,6 @@ function buttonPressed(startButton) {
         startButton.className += ' btn-danger';
     } else {
         stop = true;
-        setTimeout(function() { setProgressbar(0); }, 100)
         startButton.textContent = "Start";
         startButton.className = startButton.className.replace(' btn-danger', '');
         startButton.className += ' btn-success';
@@ -38,19 +37,32 @@ function buttonPressed(startButton) {
 }
 
 function start(progress, time, repeat) {       
-    if (!stop) {
-        setTimeout(function () {
-            progress = progress + 100;
-            var percent = (progress / time) * 100;
-            setProgressbar(percent);
-            if (percent >= 100) {
-                alertUser();
-                if (repeat) start(-2500, time, repeat)
-            } else {
-                start(progress, time, repeat);
-            }
-        }, 100);    
-    }  
+    if (stop) {
+        setProgressbar(0, "");
+        return;
+    }
+    
+    setTimeout(function () {
+        progress += 100;
+        var percent = (progress / (time  * 1000 * 60) * 100);
+        setProgressbar(percent, getRemainingTime(progress, time));
+        if (percent >= 100) {
+            alertUser();
+            if (repeat) start(-2500, time, repeat)
+        } else {
+            start(progress, time, repeat);
+        }
+    }, 100);    
+}
+
+function getRemainingTime(progress, max) {
+    if (progress <= 0) return "";
+    
+    progress = progress / 1000;
+    var minute = parseInt(((max * 60) - progress) / 60);
+    var seconds = parseInt(60 - (progress - ((max - minute - 1) * 60)));
+    var secondsLeadingZero = String(seconds).length == 1 ? "0": "";
+    return "" + minute + ":" + secondsLeadingZero + seconds;
 }
 
 function enableNotifications(enable) {
@@ -79,9 +91,10 @@ function enableNotifications(enable) {
     }
 }
 
-function setProgressbar(value) {
+function setProgressbar(value, text) {
     var bar = document.getElementById('progressbar');
     bar.style.width = value + "%"
+    bar.innerHTML = text;
     var dangerClass = " progress-bar-danger";
     if (value >= 95 && bar.className.indexOf(dangerClass) < 0) {
         bar.className += dangerClass;   

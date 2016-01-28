@@ -27,6 +27,11 @@ h1 {
     height: 2.8em;
 }
 
+.progress-bar {
+    line-height: 40px;
+    font-size: 16pt;
+}
+
 #options-box {
     /*max-width: auto;*/
     margin-top: 2em;
