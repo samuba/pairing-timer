@@ -1,13 +1,15 @@
 # pairing-timer
+A (remote ready) pair-programming timer that tells you when to switch seats. 
 
 ## Todo
-[] fix blank screen on first visit
-[] fix gong not playing in background, if it was never played in foreground
-
+- fix blank screen on first visit
+- fix gong not playing in background, if it was never played in foreground
 
 -----
+-----
+-----
 
-# Svelte + TS + Vite
+# Readme from template: Svelte + TS + Vite
 
 This template should help get you started developing with Svelte and TypeScript in Vite.
 
