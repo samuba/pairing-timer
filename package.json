@@ -1,0 +1,24 @@
+{
+  "name": "pairing-timer",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.7",
+    "postcss-load-config": "^3.0.1",
+    "svelte": "^3.37.0",
+    "svelte-preprocess": "^4.7.3",
+    "typescript": "^4.2.4",
+    "vite": "^2.3.0"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.2.5",
+    "date-fns": "^2.21.3",
+    "firebase": "^9.0.0-beta.2",
+    "postcss": "^8.2.15",
+    "tailwindcss": "^2.1.2"
+  }
+}
