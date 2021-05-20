@@ -1,7 +1,6 @@
 import { readable, Updater, writable } from "svelte/store";
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, onSnapshot, addDoc, DocumentSnapshot, DocumentData, doc, getDoc, updateDoc, DocumentReference, startAfter } from 'firebase/firestore';
-import { userId } from "./userId";
+import { getDatabase, ref, set as dbSet, onValue, push, update } from "firebase/database"
 
 export const timeNow = readable(new Date(), (set) => {
 	const interval = setInterval(() => set(new Date()), 1000);
@@ -15,15 +14,14 @@ try {
 		projectId: "pairing-timer",
 		storageBucket: "pairing-timer.appspot.com",
 		messagingSenderId: "961812360178",
-		appId: "1:961812360178:web:e96ca5961212b97698196b"
+		appId: "1:961812360178:web:e96ca5961212b97698196b",
+		databaseURL: " https://pairing-timer-default-rtdb.europe-west1.firebasedatabase.app",
 	})
 } catch (err) {
 	// if we don't catch this hot module reloading while developing breaks
 	if (!err.toString().includes("Firebase App named '[DEFAULT]' already exists")) throw err 
 }
-const firestore = getFirestore(firebase)
-const timers = collection(firestore, "timers")
-const myAuthorId = userId
+const db = getDatabase();
 
 export type TimerStatus =  "RUNNING" | "PAUSED" | "STOPPED"
 
@@ -36,17 +34,6 @@ export type Timer = {
 	lastChangeAuthor: string
 }
 
-const extractTimer = (doc: DocumentSnapshot<DocumentData>) => { 
-	const data = doc.data()
-	console.log("extract called for " + doc.id)
-	return { 
-		...data,
-		id: doc.id, 
-		start: data.start?.toDate(),
-	} as Timer
-}
-
-
 export const storagePut = (key: string, value: boolean) => localStorage.setItem(key, `${value}`)
 export const storageGet = (key: string, defaultValue: boolean) => {
   const val = localStorage.getItem(key)
@@ -54,39 +41,42 @@ export const storageGet = (key: string, defaultValue: boolean) => {
   else return val == "true"
 }
 
-const initialTimer = { id: null, start: null, status: null, cycleMinutes: 0.05 } as Timer
-
-let timerRef: DocumentReference<DocumentData>
-if (window.location.hash) {
-	const timerId = window.location.hash.split("#")[1]
-	timerRef = doc(firestore, "timers/" + timerId)
-} else {
-	addDoc(timers, initialTimer).then(ref => {
-		timerRef = ref
-		window.location.hash = ref.id
-	}) // note: does not work offline
+const parseISOString = (s) => {
+	if (!s) return
+	var b = s.split(/\D+/);
+	return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
 }
 
+const initialTimer = { start: null, status: "STOPPED", cycleMinutes: 0.05 } as Timer
+
+let timerId = ''
+const timersPath = "/timers"
+const timersRef = ref(db, timersPath)
+if (window.location.hash) {
+	timerId = window.location.hash.split("#")[1]
+} else {
+	const { key } = push(timersRef, {})
+	timerId = key
+	window.location.hash = timerId
+}
+const cycleRef = ref(db, `${timersPath}/${timerId}/cycleMinutes`)
+const repeatRef = ref(db, `${timersPath}/${timerId}/repeat`)
+const startRef = ref(db, `${timersPath}/${timerId}/start`)
+const statusRef = ref(db, `${timersPath}/${timerId}/status`)
+
 window.addEventListener("beforeunload", event => {
-	// TODO: cleanup firestore if all participants left
+	// TODO: cleanup db if all participants left
 	alert("close now?")
 }, {capture: true})
 
-const isChangeFromMe = (timer: Timer) => timer.lastChangeAuthor === myAuthorId
-
-const setStoreValue = (updatedDoc: DocumentSnapshot<DocumentData>, field: string, set: (this: void, value: any) => void) => {
-	const updatedTimer = extractTimer(updatedDoc)
-	if (isChangeFromMe(updatedTimer)) return
-	set(updatedTimer[field]) // TODO: perf improvement: use update() and only update if value changed
-}
-
 const buildCycleMinutes = ()  => {
 	const { subscribe, set } = writable(initialTimer.cycleMinutes);
-	onSnapshot(timerRef, doc => setStoreValue(doc, 'cycleMinutes', set)) 
+	onValue(cycleRef, data => set(data.val()))
 	return {
 		subscribe,
 		set(this: void, value: number) {
-			updateDoc(timerRef, { cycleMinutes: value, lastChangeAuthor: myAuthorId } as Pick<Timer, 'cycleMinutes' | 'lastChangeAuthor'>)
+			console.log({ value})
+			dbSet(cycleRef,  value)
 		}
 	}
 }
@@ -94,11 +84,12 @@ export const cycleMinutes = buildCycleMinutes()
 
 const buildRepeat = ()  => {
 	const { subscribe, set } = writable(true);
-	onSnapshot(timerRef, doc => setStoreValue(doc, 'repeat', set))
+	onValue(repeatRef, data => set(data.val()))
 	return {
 		subscribe,
 		set(this: void, value: boolean) {
-			updateDoc(timerRef, { repeat: value, lastChangeAuthor: myAuthorId } as Pick<Timer, 'repeat' | 'lastChangeAuthor'>)
+			console.log({ value})
+			dbSet(repeatRef, value)
 			storagePut("repeat", value)
 		}
 	}
@@ -106,15 +97,15 @@ const buildRepeat = ()  => {
 export const repeat = buildRepeat()
 
 const buildStartTime = ()  => {
-	const { subscribe, set } = writable(null as Date);
-	onSnapshot(timerRef, doc => setStoreValue(doc, 'start', set))
+	const { subscribe, set } = writable(initialTimer.start);
+	onValue(startRef, data => set(parseISOString(data.val())))
 	return { subscribe, set }
 }
 export const startTime = buildStartTime()
 
 const buildStatus = ()  => {
-	const { subscribe, set } = writable("STOPPED" as TimerStatus);
-	onSnapshot(timerRef, doc => setStoreValue(doc, 'status', set))
+	const { subscribe, set } = writable(initialTimer.status);
+	onValue(statusRef, data => set(data.val()))
 	return { subscribe, set }
 }
 export const status = buildStatus()
@@ -124,22 +115,16 @@ export const start = async () => {
 	const start = new Date()
 	status.set("RUNNING")
 	startTime.set(start)
-	updateDoc(timerRef, { 
-		status: "RUNNING", 
-		start,
-		lastChangeAuthor: myAuthorId,
-	} as Pick<Timer, 'status' | 'start' | 'lastChangeAuthor'>)
+	dbSet(startRef, start.toISOString());
+	dbSet(statusRef, "RUNNING");
 }
 
 export const stop = async () => {
 	const start = null
 	status.set("STOPPED")
 	startTime.set(start)
-	updateDoc(timerRef, { 
-		status: "STOPPED", 
-		start,
-		lastChangeAuthor: myAuthorId,
-	} as Pick<Timer, 'status' | 'start' |'lastChangeAuthor'>)
+	dbSet(statusRef, "STOPPED");
+	dbSet(startRef, start);
 }
 
 // export const pause = async () => {
