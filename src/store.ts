@@ -31,7 +31,6 @@ export type Timer = {
 	cycleMinutes: number
 	status: TimerStatus
 	repeat: boolean
-	lastChangeAuthor: string
 }
 
 export const storagePut = (key: string, value: boolean) => localStorage.setItem(key, `${value}`)
@@ -49,12 +48,10 @@ const parseISOString = (s) => {
 
 const initialTimer = { start: null, status: "STOPPED", cycleMinutes: 0.05 } as Timer
 
-let timerId = ''
+let timerId = window.location.hash ? window.location.hash.split("#")[1] : undefined
 const timersPath = "/timers"
 const timersRef = ref(db, timersPath)
-if (window.location.hash) {
-	timerId = window.location.hash.split("#")[1]
-} else {
+if (!timerId) {
 	const { key } = push(timersRef, {})
 	timerId = key
 	window.location.hash = timerId
@@ -69,7 +66,7 @@ window.addEventListener("beforeunload", event => {
 	alert("close now?")
 }, {capture: true})
 
-const buildCycleMinutes = ()  => {
+export const cycleMinutes = (() => {
 	const { subscribe, set } = writable(initialTimer.cycleMinutes);
 	onValue(cycleRef, data => set(data.val()))
 	return {
@@ -79,10 +76,9 @@ const buildCycleMinutes = ()  => {
 			dbSet(cycleRef,  value)
 		}
 	}
-}
-export const cycleMinutes = buildCycleMinutes()
+})()
 
-const buildRepeat = ()  => {
+export const repeat = (() => {
 	const { subscribe, set } = writable(true);
 	onValue(repeatRef, data => set(data.val()))
 	return {
@@ -93,23 +89,19 @@ const buildRepeat = ()  => {
 			storagePut("repeat", value)
 		}
 	}
-}
-export const repeat = buildRepeat()
+})()
 
-const buildStartTime = ()  => {
+export const startTime = (() => {
 	const { subscribe, set } = writable(initialTimer.start);
 	onValue(startRef, data => set(parseISOString(data.val())))
 	return { subscribe, set }
-}
-export const startTime = buildStartTime()
+})()
 
-const buildStatus = ()  => {
+export const status = (() => {
 	const { subscribe, set } = writable(initialTimer.status);
 	onValue(statusRef, data => set(data.val()))
 	return { subscribe, set }
-}
-export const status = buildStatus()
-
+})()
 
 export const start = async () => {
 	const start = new Date()

@@ -1,12 +1,17 @@
 <script lang="ts">
   import { addSeconds } from "date-fns"
+  import { onMount } from "svelte";
   import { notify } from "./notification";
   import { timeNow, cycleMinutes, startTime, start, stop, repeat } from './store'
   import Tailwind from "./Tailwind.svelte"
+
   let endTime: Date
 
   $: remainingTime = endTime ? new Date(Number(endTime) - Number($timeNow)) : undefined
   $: if (remainingTime?.getTime() <= 0) finished()
+
+  // Play gong on page load. Because if it is never played before it will not be played when timer triggers it when browser is in background
+  onMount(() => playGong(0))
 
   startTime.subscribe((startTimeS) => {
     // TODO: why do we have to subscribe instead of this:
@@ -14,17 +19,11 @@
     endTime = startTimeS ? addSeconds(startTimeS, $cycleMinutes * 60) : undefined
   })
 
-  // let repeat = storageGet("repeat", true)
-  // $: storagePut("repeat", repeat)
-  
-  // let notify = storageGet("notify", false)
-  // $: storagePut("notify", notify)
-
   const finished = () => {
-    console.log("finished")
-    console.log("start", $startTime?.toISOString())
-    console.log("jetzt", $timeNow.toISOString())
-
+    console.log("finished", {
+      start: $startTime?.toISOString(),
+      jetzt: $timeNow.toISOString()
+    })
     notify.showNotification()
     playGong()
     if ($repeat) start() 
@@ -38,9 +37,11 @@
     return `${minutes}:${seconds}`
   }
 
-  const playGong = () => {
+  const playGong = (volume = 1) => {
     if (!new Audio().canPlayType('audio/mp3')) return
-    new Audio('beep.mp3').play()
+    const audio = new Audio('beep.mp3')
+    audio.volume = volume
+    audio.play()
   }
 
 </script>
@@ -61,13 +62,6 @@
       <label for="repeat"><input bind:checked={$repeat} id="repeat" type="checkbox" class="mr-2">Repeat</label>
       <label for="notify"><input bind:checked={$notify} id="notify" class="mr-2" type="checkbox">Notification</label>     
     </div>
-
-    <!-- <p>id: {$myTimer.id}</p> 
-    <p>status: {$myTimer.status}</p>
-    <p>start: {$myTimer.start}</p>
-    <p>end  : {endTime}</p>
-    <p>cycleMinutes: {$myTimer.cycleMinutes}</p>
-    <p>remaining: {remainingTime}</p>  -->
 
   </div>  
 </main> 
