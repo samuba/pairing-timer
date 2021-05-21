@@ -1,14 +1,10 @@
 import { readable, Updater, writable } from "svelte/store";
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set as dbSet, onValue, push, update } from "firebase/database"
+import { localStoragePut } from "./common";
 
-export const timeNow = readable(new Date(), (set) => {
-	const interval = setInterval(() => set(new Date()), 1000);
-	return () => clearInterval(interval);
-});
-  
 try {
-	var firebase = initializeApp({
+	initializeApp({
 		apiKey: "AIzaSyDJfeIN2N8fPSVzOIjw1vlRANsRG_zj8WY",
 		authDomain: "pairing-timer.firebaseapp.com",
 		projectId: "pairing-timer",
@@ -22,23 +18,6 @@ try {
 	if (!err.toString().includes("Firebase App named '[DEFAULT]' already exists")) throw err 
 }
 const db = getDatabase();
-
-export type TimerStatus =  "RUNNING" | "PAUSED" | "STOPPED"
-
-export type Timer = { 
-	id: string, 
-	start: Date | undefined
-	cycleMinutes: number
-	status: TimerStatus
-	repeat: boolean
-}
-
-export const storagePut = (key: string, value: boolean) => localStorage.setItem(key, `${value}`)
-export const storageGet = (key: string, defaultValue: boolean) => {
-  const val = localStorage.getItem(key)
-  if (val === null) return defaultValue
-  else return val == "true"
-}
 
 const parseISOString = (s) => {
 	if (!s) return
@@ -86,7 +65,7 @@ export const repeat = (() => {
 		set(this: void, value: boolean) {
 			console.log({ value})
 			dbSet(repeatRef, value)
-			storagePut("repeat", value)
+			localStoragePut("repeat", value)
 		}
 	}
 })()
@@ -126,3 +105,17 @@ export const stop = async () => {
 // 	} as Pick<Timer, 'status'|'lastChangeAuthor'>)
 // }
 
+export const timeNow = readable(new Date(), (set) => {
+	const interval = setInterval(() => set(new Date()), 1000);
+	return () => clearInterval(interval);
+});
+
+export type TimerStatus =  "RUNNING" | "PAUSED" | "STOPPED"
+
+export type Timer = { 
+	id: string, 
+	start: Date | undefined
+	cycleMinutes: number
+	status: TimerStatus
+	repeat: boolean
+}

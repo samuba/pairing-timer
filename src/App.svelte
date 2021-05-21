@@ -10,7 +10,7 @@
   $: remainingTime = endTime ? new Date(Number(endTime) - Number($timeNow)) : undefined
   $: if (remainingTime?.getTime() <= 0) finished()
 
-  // Play gong on page load. Because if it is never played before it will not be played when timer triggers it when browser is in background
+  // Play on page load because if it is never played before mp3 will not be in cache and will fail to play when timer triggers it when browser is in background
   onMount(() => playGong(0))
 
   startTime.subscribe((startTimeS) => {

@@ -1,8 +1,7 @@
 import { writable } from "svelte/store";
-import { storageGet, storagePut } from "./store";
+import { localStoragePut, localStorageGet } from "./common";
 
 export const enableNotifications = () => {
-    console.log("enablty notific")
     // Let's check if the browser supports notifications
     if (!("Notification" in window)) {
         alert("This browser does not support desktop notification");
@@ -13,7 +12,7 @@ export const enableNotifications = () => {
         // If it's okay let's create a notification
         const notification = new Notification("Notifications enabled");
         setTimeout(() => notification.close(), 1400)
-        storagePut("notify", true)
+        localStoragePut("notify", true)
         return true
     }
     // Otherwise, we need to ask the user for permission
@@ -23,26 +22,23 @@ export const enableNotifications = () => {
             if (permission === "granted") {
                 const notification = new Notification("Notifications enabled");
                 setTimeout(() => notification.close(), 1400)
-                storagePut("notify", true)
+                localStoragePut("notify", true)
                 return true
             }
         });
     }
     alert("Could not enable notifications");
     return false
-  }
+}
 
-  const buildNotify = ()  => {
-	let notify = storageGet("notify", false)
-	console.log("notify", notify)
-	const { subscribe, set } = writable(notify);
-	return {
-		subscribe,
-		set(this: void, value: boolean) {
-			console.log("set n", value)
+export const notify = (() => {
+    let notify = localStorageGet("notify", false)
+    const { subscribe, set } = writable(notify);
+    return {
+        subscribe,
+        set(this: void, value: boolean) {
             if (value) {
                 const notificationsAreEnabled = enableNotifications()
-                console.log({notificationsAreEnabled})
                 if (notificationsAreEnabled) {
                     set(true)
                     notify = true
@@ -52,16 +48,15 @@ export const enableNotifications = () => {
                 }
             }
             else {
-                storagePut("notify", false)
+                localStoragePut("notify", false)
                 set(false)
                 notify = false
             } 
-		},
+        },
         showNotification() {
             if (!notify) return;
             const notification = new Notification("Switch Driver!", { icon: "notification-icon.png" });
             setTimeout(() => notification.close(), 2500);
         }
-	}
-}
-export const notify = buildNotify()
+    }
+})()
