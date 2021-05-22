@@ -1,7 +1,8 @@
-import { readable, Updater, writable } from "svelte/store";
+import { readable, writable } from "svelte/store";
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set as dbSet, onValue, push, update } from "firebase/database"
+import { getDatabase, ref, set as dbSet, onValue, push, remove, runTransaction } from "firebase/database"
 import { localStoragePut } from "./common";
+import { userId } from "./userId";
 
 try {
 	initializeApp({
@@ -19,31 +20,56 @@ try {
 }
 const db = getDatabase();
 
-const parseISOString = (s) => {
-	if (!s) return
-	var b = s.split(/\D+/);
-	return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
+const addMeToParticipants = (timerId: string) => {
+	return runTransaction(ref(db, `${timersPath}/${timerId}/participants`), currentParticipants => {
+		if (!currentParticipants) return [userId];
+		if (currentParticipants.includes(userId)) return currentParticipants
+		return [...currentParticipants, userId]
+	})
 }
 
-const initialTimer = { start: null, status: "STOPPED", cycleMinutes: 0.05 } as Timer
+const removeMeFromParticipants = (timerId: string) => {
+	runTransaction(ref(db, `${timersPath}/${timerId}/participants`), currentParticipants => {
+		if (!currentParticipants) return;
+		return currentParticipants.filter(x => x !== userId)
+	})
+}
 
-let timerId = window.location.hash ? window.location.hash.split("#")[1] : undefined
+let timerId = window.location.hash?.split("#")?.[1]
+const initialTimer = { start: null, status: "STOPPED", cycleMinutes: 0.05, participants: [userId] } as Timer
 const timersPath = "/timers"
-const timersRef = ref(db, timersPath)
 if (!timerId) {
-	const { key } = push(timersRef, {})
+	const { key } = push(ref(db, timersPath), initialTimer)
 	timerId = key
-	window.location.hash = timerId
-}
+	window.location.hash = timerId 
+} else {
+	addMeToParticipants(timerId)
+} 
+const participantsRef = ref(db, `${timersPath}/${timerId}/participants`)
 const cycleRef = ref(db, `${timersPath}/${timerId}/cycleMinutes`)
 const repeatRef = ref(db, `${timersPath}/${timerId}/repeat`)
 const startRef = ref(db, `${timersPath}/${timerId}/start`)
 const statusRef = ref(db, `${timersPath}/${timerId}/status`)
 
-window.addEventListener("beforeunload", event => {
-	// TODO: cleanup db if all participants left
-	alert("close now?")
-}, {capture: true})
+export const participants = (() => {
+	const { subscribe, set } = writable(initialTimer.participants);
+	let currentParticipants = initialTimer.participants
+	onValue(participantsRef, data =>  { 
+		currentParticipants = data.val()
+		set(currentParticipants); 
+	})
+	window.addEventListener("beforeunload", async event => {
+		event.preventDefault()
+		if (currentParticipants.length === 1) {
+			// cleanup timer entry if we are last participant
+			await remove(ref(db, `${timersPath}/${timerId}`)) 
+		} else {
+			await removeMeFromParticipants(timerId)
+		}
+		return null
+	})
+	return { subscribe }
+})()
 
 export const cycleMinutes = (() => {
 	const { subscribe, set } = writable(initialTimer.cycleMinutes);
@@ -69,6 +95,12 @@ export const repeat = (() => {
 		}
 	}
 })()
+
+const parseISOString = (s) => {
+	if (!s) return
+	var b = s.split(/\D+/);
+	return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
+}
 
 export const startTime = (() => {
 	const { subscribe, set } = writable(initialTimer.start);
@@ -118,4 +150,5 @@ export type Timer = {
 	cycleMinutes: number
 	status: TimerStatus
 	repeat: boolean
+	participants: string[]
 }

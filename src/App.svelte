@@ -2,13 +2,17 @@
   import { addSeconds } from "date-fns"
   import { onMount } from "svelte";
   import { notify } from "./notification";
-  import { timeNow, cycleMinutes, startTime, start, stop, repeat } from './store'
+  import { timeNow, cycleMinutes, startTime, start, stop, repeat, participants } from './store'
   import Tailwind from "./Tailwind.svelte"
 
   let endTime: Date
 
   $: remainingTime = endTime ? new Date(Number(endTime) - Number($timeNow)) : undefined
   $: if (remainingTime?.getTime() <= 0) finished()
+  
+  $: participantsInfo = $participants?.length <= 1 
+    ? 'Nobody is watching the timer besides you. Invite others by sharing the link!' 
+    : $participants.length === 2 ? "Another person is watching the timer with you" : `${$participants.length - 1} other people are watching the timer with you`
 
   // Play on page load because if it is never played before mp3 will not be in cache and will fail to play when timer triggers it when browser is in background
   onMount(() => playGong(0))
@@ -62,6 +66,8 @@
       <label for="repeat"><input bind:checked={$repeat} id="repeat" type="checkbox" class="mr-2">Repeat</label>
       <label for="notify"><input bind:checked={$notify} id="notify" class="mr-2" type="checkbox">Notification</label>     
     </div>
+
+    {participantsInfo}
 
   </div>  
 </main> 
