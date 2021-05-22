@@ -1,57 +1,16 @@
-<!DOCTYPE html> 
-<html>
-
-<head>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
-    crossorigin="anonymous">
-
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="libs/HackTimer.min.js"></script>
-    <script src="libs/HackTimerWorker.min.js"></script>
-    <script src="index.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pairing Timer</title>
+  <script type="module" crossorigin src="/assets/index.f4a0f375.js"></script>
+  <link rel="modulepreload" href="/assets/vendor.7c95c9ed.js">
+  <link rel="stylesheet" href="/assets/index.691fe7b7.css">
 </head>
-<title>Pairing-Timer</title>
-
-<body>
-    <div id="content" class="form-inline">
-        <h1>Pairing-Timer</h1>
-
-        <div id="main-controls" class="center">
-            <div class="input-group input-group-lg">
-                <input id="time-input" value="4" class="form-control" type="number">
-                <div class="input-group-addon">Minutes</div>
-            </div>
-            <button onclick="buttonPressed(this)" id="start-button" class="btn btn-success btn-lg">Start</button>
-        </div>
-
-        <div class="progress center">
-            <div id="progressbar" class="progress-bar progress-bar-striped active" role="progressbar" style="width: 0%;"></div>
-        </div>
-
-        <div id="options-box" class="panel panel-default center">
-            <div class="panel-heading">
-                <h3 class="panel-title">Settings</h3>
-            </div>
-            <div class="panel-body">
-                <label>
-                    <input id="repeat-input" type="checkbox" checked="true"> Repeat
-                </label>
-                <br>
-                <label>
-                    <input id="notification-input" onChange="enableNotifications(this.checked)" type="checkbox"> Show Desktop Notification
-                </label>
-                <br>
-                <label>
-                    <input id="notificationDuration-input" value="5" type="number"> Notification Duration (seconds)
-                </label>
-                <br>
-                <label>
-                    <input id="audio-input" type="checkbox" checked="true"> Play Audio
-                </label>
-            </div>
-        </div>
-
-    </div>
-</body>
-
+  <body style="height: 100%">
+    <div id="app" class=""></div>
+    
+  </body>
 </html>
