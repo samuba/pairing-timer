@@ -1,5 +1,5 @@
 # pairing-timer
-A (remote ready) pair-programming timer that tells you when to switch seats. 
+A (remote ready) pair programming timer that tells you when to switch driver. 
 
 ## Todo
 - restrict db access 
